@@ -15,7 +15,7 @@ interface UserInterface extends Document {
   profileImg?: string;
   bio?: string;
   gender?: string;
-  // savedPost: Types.ObjectId[];
+  savedPost: Types.ObjectId[];
   isBlocked: boolean;
   isOnline: boolean;
   isGoogle: boolean;

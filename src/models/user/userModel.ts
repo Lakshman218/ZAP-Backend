@@ -10,6 +10,7 @@ const userSchema: Schema = new Schema<user>({
   },
   name: {
     type: String,
+    default: '',
   },
   email: {
     type: String,
@@ -35,9 +36,10 @@ const userSchema: Schema = new Schema<user>({
     type: String,
     enum: Object.values(Gender)
   },
-  // savedPost: {
-  //   type: [{type: Schema.Types.ObjectId,}]
-  // },
+  savedPost: {
+    type: [{type: Schema.Types.ObjectId, ref: 'Post'}],
+    default: [],    
+  },
   isBlocked: {
     type: Boolean,
     default: false

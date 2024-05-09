@@ -219,6 +219,8 @@ export const userLoginController = asyncHandler(
         message: "Login succussfull",
         _id: user.id,
         userName: user.userName,
+        name: user.name,
+        bio: user.bio,
         email: user.email,
         profileImg: user.profileImg,
         token: generateToken(user.id)

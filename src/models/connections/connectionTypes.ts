@@ -5,7 +5,6 @@ interface ConnectionInterface extends Document {
   followers: Types.ObjectId[];
   following: Types.ObjectId[];
   requested: Types.ObjectId[];
-  requestSent:  Types.ObjectId[];
 }
 
 export default ConnectionInterface 
