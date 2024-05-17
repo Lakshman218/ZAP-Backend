@@ -7,6 +7,7 @@ import sendVerifyMail from "../utils/sendVerifyEmail";
 import generateToken from "../utils/generateToken";
 import Connections from "../models/connections/connectionModel";
 
+
 // Register new user
 
 export const userRegisterController = asyncHandler(
@@ -26,7 +27,7 @@ export const userRegisterController = asyncHandler(
       secret: speakeasy.generateSecret({ length: 20 }).base32,
       digits: 4,
     })  
-    // console.log("req session details", req.session);
+    console.log("req session details", req.session);
     const sessionData = req.session!;
     sessionData.userDetails = {userName, email, password}
     sessionData.otp = otp;
@@ -340,4 +341,54 @@ export const editProfileController = asyncHandler(
     }
   }
 );
+
+export const userSuggestionsController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {userId} = req.body
+    const connection = await Connections.findOne({userId})
+    if(!connection || 
+      ( connection?.followers.length === 0 && connection?.following.length === 0 )) {
+      let users = await User.find({ _id: {$ne: userId} })
+      // console.log("suggested users", users)
+      res.status(200).json({ suggestedUsers: users })
+      return
+    }
+  }
+)
+
+export const userSearchController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {searchQuery} = req.body
+    if (!searchQuery || searchQuery.trim() === '') {
+       res.status(200).json({ suggestedUsers: [] }); 
+       return
+    }
+    let users;
+    try {
+      users = await User.find({
+        userName: { $regex: searchQuery, $options: "i" },
+        isBlocked: false,
+      }).limit(6);
+      // console.log("search users", users);
+      res.status(200).json({ suggestedUsers: users });
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Internal Server Error"});
+    }
+  }
+)
+
+export const getUserDetailsController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const { userId } = req.params;
+    const user = await User.findById(userId)
+    console.log(user);
+    const connections = await Connections.findById(userId)
+    if(user) {
+      res.status(200).json({user, connections})
+    } else {
+      res.status(400).json({message: "Internal Server Error"})
+    }
+  }
+)
 

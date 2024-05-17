@@ -19,6 +19,10 @@ const ConnectionSchema: Schema = new Schema({
     type: [{ type: Schema.Types.ObjectId, ref: "User"}],
     default: [],
   },
+  requestSend: {
+    type: [{ type: Schema.Types.ObjectId, ref: "User"}],
+    default: [],
+  }
 })  
 
 const Connections = mongoose.model<ConnectionInterface>("Connections", ConnectionSchema)

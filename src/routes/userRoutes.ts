@@ -11,6 +11,9 @@ import {
   resetPasswordController,
   googleAuthController,
   editProfileController,
+  userSuggestionsController,
+  userSearchController,
+  getUserDetailsController,
  } from '../controllers/userController'
 
  router.post("/login", userLoginController)
@@ -22,6 +25,8 @@ router.post("/forgot-otp", forgotOtpController)
 router.post("/reset-password", resetPasswordController)
 router.post("/google-auth", googleAuthController)
 router.post("/edit-profile", editProfileController)
-
+router.post("/user-suggestions", userSuggestionsController)
+router.post("/user-search", userSearchController)
+router.get("/user-details/:userId", getUserDetailsController)
 
 export default router

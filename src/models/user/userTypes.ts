@@ -19,6 +19,9 @@ interface UserInterface extends Document {
   isBlocked: boolean;
   isOnline: boolean;
   isGoogle: boolean;
+  isPrivate: boolean;
+  isVerified:boolean;
+  premiumExpiryDate:Date;
 }
 
 export default UserInterface
