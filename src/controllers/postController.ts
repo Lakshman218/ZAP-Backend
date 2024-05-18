@@ -3,6 +3,7 @@ import asyncHandler from "express-async-handler";
 import generateToken from "../utils/generateToken";
 import Post from "../models/post/postModel";
 import User from "../models/user/userModel";
+import Connections from "../models/connections/connectionModel";
 
 // create new post
 
@@ -59,7 +60,14 @@ export const getUserPostController = asyncHandler(
 export const getPostController = asyncHandler(
   async(req:Request, res:Response) => {
     const {userId} = req.body
-    // console.log("userid in getallpost", req.body)
+    
+    const connections = await Connections.findOne({userId}, {following: 1}) 
+    const followingUsers = connections?.following
+    // const validUsers = {$or: [{ isPrivate: false }, { _id: { $in: followingUsers } }]}
+    const validUsers = {$or: [{ _id: { $in: followingUsers } }]}
+    const users = await User.find(validUsers)
+    const userIds = users.map((user) => user._id)
+
     interface PostsQuery {
       userId: {$in: string[]};
       isBlocked: boolean;
@@ -67,7 +75,7 @@ export const getPostController = asyncHandler(
       or?: {[key: string]: any}[];
     }
     const postsQuery: PostsQuery = {
-      userId: {$in: [userId]},
+      userId: {$in: [...userIds, userId]},
       isBlocked: false,
       isDeleted: false,
     }

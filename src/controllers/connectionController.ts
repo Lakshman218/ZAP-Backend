@@ -6,14 +6,16 @@ import Connections from "../models/connections/connectionModel";
 export const getConnectionController = asyncHandler(
   async(req:Request, res:Response) => {
     const {userId} = req.body
+    // console.log("userid for getting connection",userId);
     const connection = await Connections.findOne({userId}).populate({
       path: "followers",
       select: "userName profileImg isVerified",
     })
     .populate({
       path: "following",
-      select: "usernName profileImg isVerified"
+      select: "usernName profileImg isVerified",
     })
+    //  console.log("get connectioin", connection);
     res.status(200).json({ connection })
   }
 )
@@ -21,7 +23,7 @@ export const getConnectionController = asyncHandler(
 export const followUserController = asyncHandler(
   async(req:Request, res:Response) => {
     const {userId, followingUser} = req.body
-    console.log(userId, followingUser);
+    // console.log(userId, followingUser);
     let followed = false;
 
     const followingUserInfo = await User.findById(followingUser)
@@ -64,6 +66,7 @@ export const followUserController = asyncHandler(
 export const unFollowUserController = asyncHandler(
   async(req: Request, res: Response) => {
     const { userId, unfollowingUser } = req.body;
+    console.log("heheheh", req.body, userId, unfollowingUser);
     await Connections.findOneAndUpdate(
       {userId: unfollowingUser},
       {$pull: {followers: userId, requestSent: userId}}

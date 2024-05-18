@@ -72,6 +72,9 @@ export const verifyOTPController = asyncHandler(
       email: userDetails.email,
       password: userDetails.password,
     })
+    await Connections.create({
+      userId: user._id
+    })
     delete sessionData.userDetails;
     delete sessionData.otp;
     delete sessionData.otpGeneratedTime;
@@ -301,30 +304,30 @@ export const googleAuthController = asyncHandler(
 )
 
 // Edit profile
-
 export const editProfileController = asyncHandler(
   async(req: Request, res: Response) => {
     try {
       const { userId, image, userName, name, phone, bio, gender } = req.body;
-      const user = await User.findOne({ userId });
+      console.log("detailsssssssss", userId, image, userName, name, phone, bio, gender);
+      const user = await User.findOne({ _id: userId });
       if (!user) {
         res.status(400).json({ message: "User not found" });
         return
       }
-      const userExist = await User.findOne({ userName });
-      if (userExist && userExist._id !== userId) {
+      const userExist = await User.findOne({ userName:userName });
+      if (userExist && (userExist._id.toString() !== userId)) {
         res.status(400).json({ message: "Username taken" });
         return
       }
-
       if (userName) user.userName = userName;
       if (name) user.name = name;
       if (image) user.profileImg = image;
       if (phone) user.phone = phone;
       if (bio) user.bio = bio;
       if (gender) user.gender = gender;
-
+     
       await user.save();
+
       res.status(200).json({ 
         _id: user.id,
         userName: user.userName,
@@ -381,9 +384,9 @@ export const userSearchController = asyncHandler(
 export const getUserDetailsController = asyncHandler(
   async(req:Request, res:Response) => {
     const { userId } = req.params;
+    // console.log("useridddddd",userId);
     const user = await User.findById(userId)
-    console.log(user);
-    const connections = await Connections.findById(userId)
+    const connections = await Connections.findOne({userId})
     if(user) {
       res.status(200).json({user, connections})
     } else {

@@ -12,3 +12,5 @@ import {
 router.post('/get-connection', getConnectionController)
 router.post('/follow', followUserController)
 router.post('/unfollow', unFollowUserController)
+
+export default router
