@@ -6,10 +6,11 @@ import {
   getPostController,
   getUserPostController,
  } from "../controllers/postController";
+import { protect } from "../middlewares/auth";
 
 
- router.post("/add-post", addPostController)
- router.post("/get-post", getPostController)
- router.get("/get-user-post/:userId",getUserPostController)
+ router.post("/add-post", protect, addPostController)
+ router.post("/get-post", protect, getPostController)
+ router.get("/get-user-post/:userId", protect, getUserPostController)
 
  export default router

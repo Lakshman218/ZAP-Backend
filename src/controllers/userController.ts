@@ -217,6 +217,10 @@ export const userLoginController = asyncHandler(
     console.log("email: ",email, "Password: ", password);
 
     const user = await User.findOne({email})
+    if(user?.isBlocked) {
+      res.status(400).json({message: "user is blocked"})
+      return
+    }
     
     if (user && typeof user.password === 'string' && (await bcrypt.compare(password, user.password))) {
       res.status(200).json({
@@ -226,6 +230,8 @@ export const userLoginController = asyncHandler(
         name: user.name,
         bio: user.bio,
         email: user.email,
+        phone: user.phone,
+        gender: user.gender,
         profileImg: user.profileImg,
         token: generateToken(user.id)
       })
