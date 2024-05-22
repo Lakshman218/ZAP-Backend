@@ -4,6 +4,7 @@ import Admin from "../models/admin/adminModel";
 import generateAdminToken from "../utils/generateAdminToken";
 import User from "../models/user/userModel";
 import Post from "../models/post/postModel";
+import Report from "../models/report/reportModel";
 
 export const LoginController = asyncHandler(
   async(req: Request, res: Response) => {
@@ -61,7 +62,6 @@ export const getPostsController = asyncHandler(
       path: "userId",
       select: "userName profileImg",
     })
-    // console.log("post list",posts);
     if(posts) {
       res.status(200).json({posts})
     } else {
@@ -72,30 +72,60 @@ export const getPostsController = asyncHandler(
 
 export const postBlockController = asyncHandler(
   async (req: Request, res: Response) => {
-    const { postId } = req.body;
-    
-    // Find the post by ID
+    const {postId}  = req.body;
+    console.log("postid",postId);
     const post = await Post.findById(postId);
     
-    // Check if the post exists
     if (!post) {
       res.status(400);
       throw new Error("Post not found");
     }
-
-    // Toggle the blocked status
-    post.isBlocked = !post.isBlocked;
-    
-    // Save the updated post
+    post.isBlocked = !post.isBlocked;    
     await post.save();
-    
-    // Fetch all posts and convert them to plain objects
-    const posts = await Post.find({}).sort({ date: -1 }).lean();
-    
-    // Determine the message based on the new blocked status
+
+    const posts = await Post.find({}).sort({ date: -1 }).lean();    
     const blockedPost = post.isBlocked ? "Blocked" : "Unblocked";
     
-    // Send the response with the posts and the message
     res.status(200).json({ posts, message: `${post.title} has been ${blockedPost}` });
   }
 );
+
+export const reportBlockController = asyncHandler(
+  async (req: Request, res: Response) => {
+    const {postId}  = req.body;
+    console.log("postid",postId);
+    const post = await Post.findById(postId);
+    
+    if (!post) {
+      res.status(400);
+      throw new Error("Post not found");
+    }
+    post.isBlocked = !post.isBlocked;    
+    await post.save();
+
+    const posts = await Post.find({}).sort({ date: -1 }).lean();    
+    const blockedPost = post.isBlocked ? "Blocked" : "Unblocked";
+    
+    res.status(200).json({ posts, message: `${post.title} has been ${blockedPost}` });
+  }
+);
+
+export const getPostReports = asyncHandler(
+  async(req: Request, res: Response) => {
+    const reports = await Report.find({})
+    .populate({
+      path:'postId',
+      populate:({
+        path:'userId'
+      })
+    })
+    .sort({date: -1})
+    console.log(reports)
+    if(reports) {
+      console.log("reports", reports);
+      res.status(200).json({reports})
+    } else {
+      res.status(404).json({messsage: "No reports found"})
+    }
+  }
+)

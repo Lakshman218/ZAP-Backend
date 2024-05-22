@@ -9,11 +9,11 @@ export const getConnectionController = asyncHandler(
     // console.log("userid for getting connection",userId);
     const connection = await Connections.findOne({userId}).populate({
       path: "followers",
-      select: "userName profileImg isVerified",
+      select: "userName name profileImg isVerified",
     })
     .populate({
       path: "following",
-      select: "usernName profileImg isVerified",
+      select: "userName name profileImg isVerified",
     })
     //  console.log("get connectioin", connection);
     res.status(200).json({ connection })

@@ -233,6 +233,7 @@ export const userLoginController = asyncHandler(
         phone: user.phone,
         gender: user.gender,
         profileImg: user.profileImg,
+        savedPost: user.savedPost,
         token: generateToken(user.id)
       })
     } else {
@@ -314,7 +315,7 @@ export const editProfileController = asyncHandler(
   async(req: Request, res: Response) => {
     try {
       const { userId, image, userName, name, phone, bio, gender } = req.body;
-      console.log("detailsssssssss", userId, image, userName, name, phone, bio, gender);
+      // console.log("detailsssssssss", userId, image, userName, name, phone, bio, gender);
       const user = await User.findOne({ _id: userId });
       if (!user) {
         res.status(400).json({ message: "User not found" });
