@@ -129,3 +129,21 @@ export const getPostReports = asyncHandler(
     }
   }
 )
+
+export const getDashboardDetails  = asyncHandler(
+  async(req:Request, res:Response) => {
+
+    const totalUsers = await User.countDocuments();
+    const totalPosts = await Post.countDocuments();
+    const blockedPosts = await Post.countDocuments({ isBlocked: true });
+    const totalReports = await Report.countDocuments();
+
+    const status = {
+      totalUsers,
+      totalPosts,
+      blockedPosts,
+      totalReports,
+    }
+    res.status(200).json(status)
+  }
+)

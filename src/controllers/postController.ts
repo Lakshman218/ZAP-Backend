@@ -5,6 +5,7 @@ import Post from "../models/post/postModel";
 import User from "../models/user/userModel";
 import Connections from "../models/connections/connectionModel";
 import Report from "../models/report/reportModel";
+import Comment from "../models/comment/commentModel";
 
 // create new post
 
@@ -52,7 +53,7 @@ export const getUserPostController = asyncHandler(
     })
     .populate({
       path: "userId",
-      select: "userName profileImg isVerified",
+      select: "userName name profileImg isVerified",
     })
     .sort({date: -1})
     // console.log("userposts", posts)
@@ -87,7 +88,11 @@ export const getPostController = asyncHandler(
     const posts = await Post.find(postsQuery)
       .populate({
         path: "userId",
-        select: "userName profileImg isVerified",
+        select: "userName name profileImg isVerified",
+      })
+      .populate({
+        path: "likes",
+        select: "userName name profileImg isVerified",
       })
       .sort({date: -1})
       // console.log(posts);
@@ -146,7 +151,6 @@ export const savePostController = asyncHandler(
 export const getSavedPostController = asyncHandler(
   async(req: Request, res: Response) => {
     const id = req.params.userId;
-    // console.log("userid",id);
     const user = await User.findOne(
       {_id: id, isBlocked: false},
       { savedPost: 1, _id: 0 }
@@ -256,5 +260,222 @@ export const reportPostController = asyncHandler(
       return
     }
     res.status(200).json({ message: "Post has been reported successfully." });
+  }
+)
+
+export const likePostController = asyncHandler(
+  async(req: Request, res: Response) => {
+    const {postId, userId} = req.body
+    const post = await Post.findById(postId)
+    if (!post) {
+      res.status(404);
+      throw new Error("Post not found");
+    }
+    const isLiked = post.likes.includes(userId)
+    if(isLiked) {
+      await Post.findOneAndUpdate(
+        { _id: postId },
+        { $pull: {likes: userId} },
+        { new: true }
+      );
+    } else {
+      await Post.findOneAndUpdate(
+        { _id: postId },
+        { $push: {likes: userId} },
+        { new: true }
+      )
+    }
+
+    const posts = await Post.find({
+      userId: userId,
+      isBlocked: false,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg isVerified",
+    })
+    .sort({date: -1})
+    // console.log("posts while like",posts);
+    res.status(200).json({posts})
+  }
+)
+
+// get post comments
+export const getPostCommentsController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const postId = req.params.postId
+    // console.log("postId for getting comment",postId);
+    const comments = await Comment.find({
+      postId: postId,
+      isDeleted: false 
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg",
+    })
+    .populate({
+      path: "replyComments.userId",
+      select: "userName name profileImg",
+    })
+    .sort({createdAt: -1})
+    // console.log("get comments",comments);
+    res.status(200).json({comments})
+  }
+)
+
+// add comment
+export const addCommentController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {postId, userId, comment} = req.body;
+    console.log(postId, userId, comment);
+    const newComment = await Comment.create({
+      postId,
+      userId,
+      comment,
+    })
+    await newComment.save()
+
+    const comments = await Comment.find({
+      postId: postId,
+      isDeleted: false
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg"
+    })
+    .populate({
+      path: "replyComments.userId",
+      select: "userName name profileImg"
+    })
+    .sort({ createdAt: -1 });
+    res.status(200).json({message: "Comment added succussfully", comments})
+  }
+)
+
+// delete comment
+export const deleteCommentController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {commentId} = req.body
+    const comment = await Comment.findById(commentId)
+    if(!comment) {
+      res.status(404);
+      throw new Error("Comment not found");
+    }
+    comment.isDeleted = true;
+    await comment.save()
+
+    const comments = await Comment.find({
+      postId: comment.postId,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg"
+    })
+    .populate({
+      path: "replyComments.userId",
+      select: "userName name profileImg"
+    })
+    .sort({ createdAt: -1 });
+    res.status(200).json({message: "Comment deleted succussfully", comments})
+  }
+)
+
+// reply comment
+export const ReplyCommentController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const { commentId, userId, replyComment } = req.body
+    const comment = await Comment.findById(commentId)
+    if (!comment) {
+      res.status(404);
+      throw new Error("Comment not found");
+    }
+    const newReplyComment = {
+      userId,
+      replyComment,
+      timestamp: new Date(),
+    }
+    comment.replyComments.push(newReplyComment)
+    await comment.save()
+
+    const comments = await Comment.find({
+      postId: comment.postId,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg"
+    })
+    .populate({
+      path: "replyComments.userId",
+      select: "userName name profileImg"
+    })
+    .sort({ createdAt: -1 });
+    res.status(200).json({message: "Reply Comment added succussfully", comments})
+  }
+)
+
+// get comment count
+export const getCommentsCount = asyncHandler(
+  async(req:Request, res:Response) => {
+    const postId = req.params.postId
+    const commentCounts = await Comment.countDocuments({
+      postId,
+      isDeleted: false,
+    })
+    res.status(200).json({commentCounts})
+  }
+)
+
+export const handlePostCommentController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {postId, userId} = req.body
+    // console.log("manage commetn",postId);
+    const post = await Post.findById(postId)
+    if(!post) {
+      res.status(400).json({message: "post not found"})
+      return
+    }
+    post.hideComment = !post.hideComment
+    await post.save()
+    const posts = await Post.find({
+      userId: userId,
+      isBlocked: false,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg isVerified",
+    })
+    .sort({date: -1})
+    const commentState = post.hideComment ? "Comment is hidden" : "Comment is visible"
+    res.status(200).json({message: `${commentState}`, posts})
+  }
+)
+
+export const handlePostLikeController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {postId, userId} = req.body
+    // console.log("manage like",postId, userId);
+    const post = await Post.findById(postId)
+    if(!post) {
+      res.status(400).json({message: "post not found"})
+      return
+    }
+    post.hideLikes = !post.hideLikes
+    await post.save()
+    const posts = await Post.find({
+      userId: userId,
+      isBlocked: false,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg isVerified",
+    })
+    .sort({date: -1})
+    const likeState = post.hideLikes ? "Like is hidden" : "Like is visible"
+    res.status(200).json({message: `${likeState}`, posts})
   }
 )
