@@ -4,6 +4,7 @@ import { ReplyCommentInterface, CommentInterface } from "./commentTypes";
 const ReplyCommentSchema = new Schema<ReplyCommentInterface>({
   userId: {type: Schema.Types.ObjectId, ref: 'User', required: true},
   replyComment: {type: String, required: true},
+  isReplyDeleted: {type: Boolean, default: false},
   timestamp: {type: Date, default: Date.now},
 })
 

@@ -7,6 +7,7 @@ import {
   addPostController,
   deleteCommentController,
   deletePostController,
+  deleteReplyCommentController,
   getCommentsCount,
   getEditPostController,
   getPostCommentsController,
@@ -36,7 +37,8 @@ import { protect } from "../middlewares/auth";
  router.get("/get-post-comments/:postId", protect, getPostCommentsController)
  router.post("/add-comment", protect, addCommentController)
  router.post("/reply-comment", protect, ReplyCommentController)
- router.delete("/delete-post-comment", protect, deleteCommentController)
+ router.post("/delete-post-comment", protect, deleteCommentController)
+ router.post("/delete-post-replyComment", protect, deleteReplyCommentController)
  router.get("/get-comments-count/:postId", protect, getCommentsCount)
  router.post("/handle-comment", protect, handlePostCommentController)
  router.post("/handle-like", protect, handlePostLikeController)

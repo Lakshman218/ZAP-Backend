@@ -14,7 +14,10 @@ import {
   userSuggestionsController,
   userSearchController,
   getUserDetailsController,
+  changePasswordController,
  } from '../controllers/userController'
+ 
+import { getNotifications } from '../controllers/notificationController'
 
  router.post("/login", userLoginController)
 router.post("/register", userRegisterController)
@@ -28,6 +31,8 @@ router.post("/user-suggestions", userSuggestionsController)
 router.post("/user-search", userSearchController)
 router.get("/user-details/:userId", getUserDetailsController)
 router.post("/edit-profile", editProfileController)
+router.post("/change-password", changePasswordController)
+router.post("/get-notifications", getNotifications)
 
 
 export default router

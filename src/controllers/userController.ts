@@ -114,6 +114,7 @@ export const resendOTPController = asyncHandler(
 export const forgotPasswordController = asyncHandler(
   async(req: Request, res: Response) => {
     const {email} = req.body;
+    console.log("email req.body", email);
     const user = await User.findOne({email})
 
     if(user?.isGoogle) {
@@ -351,6 +352,30 @@ export const editProfileController = asyncHandler(
     }
   }
 );
+
+export const changePasswordController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const { userId, currentPassword, newPassword } = req.body
+    // console.log(userId, currentPassword, newPassword);
+    const user = await User.findById(userId)
+    if(!user) {
+      res.status(500).json({message: "User not found"})
+      return
+    }
+    if (user && typeof user.password === 'string' && (await bcrypt.compare(currentPassword, user.password))) {
+      console.log("inside user");
+      const salt = await bcrypt.genSalt(10)
+      const hashedPassword = await bcrypt.hash(newPassword, salt)
+      user.password = hashedPassword  
+      await user.save()
+      res.status(200).json({ message: "Password has been reset successfully" });
+      return
+    } else {
+      res.status(500).json({message: "Password is wrong"})
+      return
+    }
+  }
+)
 
 export const userSuggestionsController = asyncHandler(
   async(req:Request, res:Response) => {

@@ -3,6 +3,7 @@ import {Schema, Document, Types} from 'mongoose'
 export interface ReplyCommentInterface {
   userId: Schema.Types.ObjectId | string
   replyComment: string;
+  isReplyDeleted?: boolean;
   timestamp: Date;
 }
 

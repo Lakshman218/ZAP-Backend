@@ -10,6 +10,7 @@ import connectDB from './config/db';
 import userRoutes from './routes/userRoutes'
 import adminRoutes from './routes/adminRoutes'
 import postRoutes from './routes/postRoutes'
+import chatRoutes from './routes/chatRoutes'
 import connectionRoutes from './routes/connectionRoutes'
 import errorHandler from './middlewares/errorMiddleware';
 
@@ -48,6 +49,7 @@ app.use("/api/", userRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/post", postRoutes)
 app.use("/api/connection", connectionRoutes)
+app.use("/api/chat", chatRoutes)
 
 const PORT = process.env.PORT || 3000
 connectDB()

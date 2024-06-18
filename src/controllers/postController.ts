@@ -6,6 +6,7 @@ import User from "../models/user/userModel";
 import Connections from "../models/connections/connectionModel";
 import Report from "../models/report/reportModel";
 import Comment from "../models/comment/commentModel";
+import { createNotification } from "../helpers/notificationHelpers";
 
 // create new post
 
@@ -55,14 +56,37 @@ export const getUserPostController = asyncHandler(
       path: "userId",
       select: "userName name profileImg isVerified",
     })
+    .populate({
+      path: "likes",
+      select: "userName name profileImg isVerified",
+    })
     .sort({date: -1})
     // console.log("userposts", posts)
     res.status(200).json(posts)
   }
 )
 
-// get all posts
+// get single post 
+export const singlePostController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {postId} = req.body
+    const post = await Post.findOne({
+      _id: postId,
+      isBlocked: false,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg isVerified",
+    })
+    .populate({
+      path: "likes",
+      select: "userName name profileImg isVerified",
+    })
+  }
+)
 
+// get all posts
 export const getPostController = asyncHandler(
   async(req:Request, res:Response) => {
     const {userId} = req.body
@@ -279,6 +303,20 @@ export const likePostController = asyncHandler(
         { new: true }
       );
     } else {
+      console.log("matching", post.userId, userId);
+      if (post.userId.toString() !== userId) {
+        const notificationData = {
+          senderId: userId,
+          receiverId: post.userId.toString(), // Ensure this is a string
+          message: "liked your post",
+          link: `/profile`,
+          read: false,
+          isDeleted: false,
+          postId: postId,
+        };
+        await createNotification(notificationData);
+      }
+
       await Post.findOneAndUpdate(
         { _id: postId },
         { $push: {likes: userId} },
@@ -336,6 +374,17 @@ export const addCommentController = asyncHandler(
     })
     await newComment.save()
 
+    const postUploader = await Post.findById(postId)
+    if(postUploader && postUploader.userId !== userId) {
+      const notificationData = {
+        senderId: userId,
+        receiverId: postUploader.userId,
+        message: "commented on a post",
+        link: `/user-profile/${postUploader.userId}`,
+      }
+      createNotification(notificationData)
+    }
+
     const comments = await Comment.find({
       postId: postId,
       isDeleted: false
@@ -382,10 +431,54 @@ export const deleteCommentController = asyncHandler(
   }
 )
 
+// delete Comment reply
+export const deleteReplyCommentController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {commentId, replyUser, replyTime} = req.body
+
+    // if (!mongoose.Types.ObjectId.isValid(commentId) || !mongoose.Types.ObjectId.isValid(replyUser)) {
+    //   res.status(400).json({ message: 'Invalid ID format' });
+    //   return
+    // }
+  
+    const comment = await Comment.findById(commentId);
+    if (!comment) {
+      res.status(404).json({ message: 'Comment not found' });
+      return
+    }
+    const reply = comment.replyComments.find((reply) => 
+      reply.userId.toString() === replyUser &&
+      new Date(reply.timestamp).toISOString() === new Date(replyTime).toISOString()
+    );
+    if (!reply) {
+      res.status(404).json({ message: 'Reply comment not found' });
+      return
+    }
+    reply.isReplyDeleted = true;
+    await comment.save();
+    
+    const comments = await Comment.find({
+      postId: comment.postId,
+      isDeleted: false,
+    })
+    .populate({
+      path: "userId",
+      select: "userName name profileImg"
+    })
+    .populate({
+      path: "replyComments.userId",
+      select: "userName name profileImg"
+    })
+    .sort({ createdAt: -1 });
+    res.status(200).json({message: "Comment deleted succussfully", comments})
+  }
+)
+
 // reply comment
 export const ReplyCommentController = asyncHandler(
   async(req:Request, res:Response) => {
     const { commentId, userId, replyComment } = req.body
+    console.log(commentId, userId, replyComment);
     const comment = await Comment.findById(commentId)
     if (!comment) {
       res.status(404);
@@ -420,10 +513,12 @@ export const ReplyCommentController = asyncHandler(
 export const getCommentsCount = asyncHandler(
   async(req:Request, res:Response) => {
     const postId = req.params.postId
+    // console.log("cmt count",req.params.postId);
     const commentCounts = await Comment.countDocuments({
       postId,
       isDeleted: false,
     })
+    // console.log("count",commentCounts);
     res.status(200).json({commentCounts})
   }
 )

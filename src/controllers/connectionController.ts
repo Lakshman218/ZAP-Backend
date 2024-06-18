@@ -2,6 +2,7 @@ import {Request, Response} from "express"
 import asyncHandler from "express-async-handler";
 import User from "../models/user/userModel";
 import Connections from "../models/connections/connectionModel";
+import { createNotification } from "../helpers/notificationHelpers";
 
 export const getConnectionController = asyncHandler(
   async(req:Request, res:Response) => {
@@ -54,6 +55,15 @@ export const followUserController = asyncHandler(
         {upsert: true}
       )
       followed = true
+      const notificationData = {
+        senderId: userId,
+        receiverId: followingUser,
+        message: "started following you",
+        link: `/profile`,
+        read: false,
+        isDeleted: false,
+      }
+      createNotification(notificationData)
     }
     const followingUserConnections = await Connections.find({
       userId: followingUser,
