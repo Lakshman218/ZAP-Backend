@@ -10,6 +10,7 @@ import {
   deleteReplyCommentController,
   getCommentsCount,
   getEditPostController,
+  getExplorePostController,
   getPostCommentsController,
   getPostController,
   getSavedPostController,
@@ -42,5 +43,6 @@ import { protect } from "../middlewares/auth";
  router.get("/get-comments-count/:postId", protect, getCommentsCount)
  router.post("/handle-comment", protect, handlePostCommentController)
  router.post("/handle-like", protect, handlePostLikeController)
+ router.post("/get-explore-post", getExplorePostController)
 
  export default router

@@ -15,12 +15,19 @@ export const userRegisterController = asyncHandler(
     const {userName, email, password} = req.body
     
     const userEmail = await User.findOne({email})
+    if(userEmail?.isDeleted) {
+      res.status(500).json({message: "Invalid email Id"})
+      return
+    }
     if(userEmail) {
       res.status(500).json({message: "Email already exist"})
+      return
     }
+    
     const userId = await User.findOne({userName})
     if(userId) {
       res.status(500).json({message: "UserName already exist"})
+      return
     }
 
     const otp = speakeasy.totp({
@@ -119,6 +126,10 @@ export const forgotPasswordController = asyncHandler(
 
     if(user?.isGoogle) {
       res.status(400).json({message: "SignIn with google or Create account"})
+      return
+    }
+    if(user?.isDeleted) {
+      res.status(400).json({message: "Invalid email Id"})
       return
     }
     
@@ -220,6 +231,10 @@ export const userLoginController = asyncHandler(
     const user = await User.findOne({email})
     if(user?.isBlocked) {
       res.status(400).json({message: "user is blocked"})
+      return
+    }
+    if(user?.isDeleted) {
+      res.status(400).json({message: "user not exist in this email"})
       return
     }
     
@@ -378,18 +393,35 @@ export const changePasswordController = asyncHandler(
 )
 
 export const userSuggestionsController = asyncHandler(
-  async(req:Request, res:Response) => {
-    const {userId} = req.body
-    const connection = await Connections.findOne({userId})
-    if(!connection || 
-      ( connection?.followers.length === 0 && connection?.following.length === 0 )) {
-      let users = await User.find({ _id: {$ne: userId} })
-      // console.log("suggested users", users)
-      res.status(200).json({ suggestedUsers: users })
-      return
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      const connection = await Connections.findOne({ userId });
+
+      const userQuery = {
+        _id: { $ne: userId },
+        isDeleted: false,
+        isBlocked: false
+      };
+
+      if (!connection || (connection?.followers.length === 0 && connection?.following.length === 0)) {
+        let users = await User.find(userQuery).limit(4);
+        res.status(200).json({ suggestedUsers: users });
+        return;
+      }
+
+      const followingUsers = connection.following;
+      const suggestedUsers = await User.find({
+        ...userQuery,
+        _id: { $nin: [...followingUsers, userId] }
+      }).limit(4);
+
+      res.status(200).json({ suggestedUsers });
+    } catch (err) {
+      res.status(500).json(err);
     }
   }
-)
+);
 
 export const userSearchController = asyncHandler(
   async(req:Request, res:Response) => {
@@ -403,6 +435,7 @@ export const userSearchController = asyncHandler(
       users = await User.find({
         userName: { $regex: searchQuery, $options: "i" },
         isBlocked: false,
+        isDeleted: false,
       }).limit(6);
       // console.log("search users", users);
       res.status(200).json({ suggestedUsers: users });
@@ -427,3 +460,152 @@ export const getUserDetailsController = asyncHandler(
   }
 )
 
+export const verifyEmailForEmailController = asyncHandler(
+  async(req: Request, res: Response) => {
+    const {email, userId} = req.body;
+    // console.log("email req.body", email, userId);
+    const user = await User.findOne({email})
+    const userData = await User.findById(userId)
+    
+    if(userData) {
+      if(user) {
+        res.status(400).json({message: "Email already exist"})
+        return 
+      } else {
+        const otp = speakeasy.totp({
+          secret: speakeasy.generateSecret({length: 20}).base32,
+          digits: 4,
+        })
+        const sessionData = req.session!;
+        sessionData.otp = otp
+        sessionData.userId = userId
+        sessionData.otpGeneratedTime = Date.now()
+        sessionData.email = email;
+        console.log("sessiondata in forgotPasswordController", sessionData);
+        sendVerifyMail(req, userData.userName, email);
+        res.status(200).json({message: `OTP has been send to your email`, email})
+      }
+    }
+  }
+)
+
+export const verifyOTPForEmailController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const { otp } = req.body;
+    console.log("otp email",otp);
+
+    if(!otp) {
+      res.status(400).json({message: "Please provide OTP"})
+      return
+    }
+    const sessionData = req.session!;
+    const storedOTP = sessionData.otp
+    console.log("stored otp",storedOTP);
+    if(!storedOTP || otp !== storedOTP) {
+      res.status(400).json({message: "Invalid OTP"})
+      return
+    }
+    const otpGeneratedTime = sessionData.otpGeneratedTime || 0;
+    const currentTime = Date.now();
+    const otpExpirationTime = 60 * 1000;
+    if (currentTime - otpGeneratedTime > otpExpirationTime) { 
+      res.status(400).json({message: "OTP has expired"})
+      return
+    }
+
+    const email = sessionData?.email
+    const userId = sessionData?.userId
+    const user = await User.findById(userId);
+    if (user) {
+      user.email = email;
+      await user.save();
+    }
+    delete sessionData.otp
+    delete sessionData.otpGeneratedTime
+
+    const userData = await User.findById(userId)
+    // const mssg = "Email has been updated"
+    res.status(200).json({
+      _id: userData?.id,
+      userName: userData?.userName,
+      name: userData?.name,
+      bio: userData?.bio,
+      email: userData?.email,
+      phone: userData?.phone,
+      gender: userData?.gender,
+      profileImg: userData?.profileImg,
+      savedPost: userData?.savedPost,
+      token: generateToken(userData?.id)
+    })
+    // res.status(200).json({ message: "Email has been updated" })
+  }
+)
+
+// export const verifyOTPForPswdController = asyncHandler(
+//   async(req:Request, res:Response) => {
+//     const { otp } = req.body;
+//     console.log("otp pswd",otp);
+
+//   }
+// )
+
+export const deleteAccountController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {userId} = req.body
+    console.log("delete acc", userId);
+    const user = await User.findById(userId)
+    if(!user) {
+      res.status(500).json({message: "User not found"})
+      return 
+    }
+    user.isDeleted = true
+    await user.save()
+    res.status(200).json({message: "Your account has been deleted"})
+  }
+)
+
+// export const getAllUsersController = asyncHandler(
+//   async(req:Request, res:Response) => {
+//     const {userId} = req.body
+//     const connection = await Connections.find().populate({
+//       path: "followers",
+//         select: "userName name profileImg isVerified",
+//         match: { isBlocked: false, isDeleted: false }
+//       }).populate({
+//         path: "following",
+//         select: "userName name profileImg isVerified",
+//         match: { isBlocked: false, isDeleted: false }
+//       }).populate({
+//         path: "userId",
+//         select: "userName name profileImg isVerified",
+//         match: { isBlocked: false, isDeleted: false }
+//       });
+//     //  console.log("get connectioin", connection);
+//     res.status(200).json({ connection })
+//   }
+// )
+
+export const getAllUsersController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const users = await User.find({ isDeleted: false }).select('userName name profileImg isVerified');
+
+      const userIds = users.map(user => user._id);
+      const connections = await Connections.find({ userId: { $in: userIds } });
+
+      const result = users.map(user => {
+        const userConnection = connections.find(conn => conn.userId.toString() === user._id.toString());
+        return {
+          ...user.toObject(),
+          followersCount: userConnection ? userConnection.followers.length : 0,
+          followingCount: userConnection ? userConnection.following.length : 0,
+        };
+      });
+      console.log("result", result);
+      res.status(200).json({ users: result });
+    } catch (error) {
+      console.error('Error fetching users and connections:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+);

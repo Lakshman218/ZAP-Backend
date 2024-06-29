@@ -45,7 +45,10 @@ const userSchema: Schema = new Schema<user>({
     type: Boolean,
     default: false
   },
-  
+  isDeleted: {
+    type: Boolean,
+    default: false
+  },
   isOnline: {
     type: Boolean,
     default: false

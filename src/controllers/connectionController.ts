@@ -10,12 +10,13 @@ export const getConnectionController = asyncHandler(
     // console.log("userid for getting connection",userId);
     const connection = await Connections.findOne({userId}).populate({
       path: "followers",
-      select: "userName name profileImg isVerified",
-    })
-    .populate({
-      path: "following",
-      select: "userName name profileImg isVerified",
-    })
+        select: "userName name profileImg isVerified",
+        match: { isBlocked: false, isDeleted: false }
+      }).populate({
+        path: "following",
+        select: "userName name profileImg isVerified",
+        match: { isBlocked: false, isDeleted: false }
+      });
     //  console.log("get connectioin", connection);
     res.status(200).json({ connection })
   }

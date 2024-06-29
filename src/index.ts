@@ -23,6 +23,7 @@ declare module "express-session" {
     otp?: string;
     otpGeneratedTime?: number;
     email: string;
+    userId: string;
   }
 }
 

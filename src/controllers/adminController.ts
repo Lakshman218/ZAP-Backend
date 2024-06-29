@@ -29,7 +29,7 @@ export const LoginController = asyncHandler(
 export const getUsersController = asyncHandler(
   async(req:Request, res:Response) => {
 
-    const users = await User.find({}).sort({date: -1})
+    const users = await User.find({isDeleted: false}).sort({date: -1})
     if(users) {
       res.status(200).json({users})
     } else {
@@ -49,7 +49,7 @@ export const userBlockController = asyncHandler(
     }
     user.isBlocked = !user.isBlocked
     await user.save()
-    const users = await User.find({}).sort({date: -1})
+    const users = await User.find({isDeleted: false}).sort({date: -1})
     const blockedUser = user.isBlocked ? "Blocked" : "Unblocked"
     res.status(200).json({users, message: `${user.userName} has been ${blockedUser}`})
   }
@@ -132,18 +132,73 @@ export const getPostReports = asyncHandler(
 
 export const getDashboardDetails  = asyncHandler(
   async(req:Request, res:Response) => {
+    try {
+      const totalUsers = await User.countDocuments({isDeleted: false});
+      const totalPosts = await Post.countDocuments();
+      const blockedPosts = await Post.countDocuments({ isBlocked: true });
+      const totalReports = await Report.countDocuments();
 
-    const totalUsers = await User.countDocuments();
-    const totalPosts = await Post.countDocuments();
-    const blockedPosts = await Post.countDocuments({ isBlocked: true });
-    const totalReports = await Report.countDocuments();
-
-    const status = {
-      totalUsers,
-      totalPosts,
-      blockedPosts,
-      totalReports,
-    }
+      const status = {
+        totalUsers,
+        totalPosts,
+        blockedPosts,
+        totalReports,
+      }
     res.status(200).json(status)
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+//  get all users
+export const getGraphUsersController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      console.log("hereeeeeee");
+      const users = await User.find({isDeleted: false}).select('createdAt')
+      console.log("users for graph", users);
+      res.status(200).json({users})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+export const chartDataController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      const userJoinedDetails = await User.aggregate([
+        {
+          $group: {
+            _id: {$dateToString: { format: "%Y-%m", date: "$createdAt"}},
+            userCount: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        }
+      ])
+      const postCreationDetails = await Post.aggregate([
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+            postCount: { $sum: 1 },
+          },
+        },
+        {
+          $sort: { _id: 1 },
+        },
+      ]);
+
+      const chartData = {
+        userJoinedDetails,
+        postCreationDetails,
+      }
+      console.log("chartdata", chartData);
+      res.status(200).json({chartData})
+    } catch (error) {
+      
+    }
   }
 )

@@ -17,6 +17,7 @@ interface UserInterface extends Document {
   gender?: string;
   savedPost: Types.ObjectId[];
   isBlocked: boolean;
+  isDeleted: boolean;
   isOnline: boolean;
   isGoogle: boolean;
   isPrivate: boolean;

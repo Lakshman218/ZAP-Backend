@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import Connections from "../models/connections/connectionModel";
 import User from "../models/user/userModel";
 import Conversation from "../models/conversations/conversationModel";
+import Message from "../models/messages/MessagesModel";
 
 
 export const getEligibleUsersController = asyncHandler(
@@ -68,8 +69,78 @@ export const getUserConversationController = asyncHandler(
         select: "userName name profileImg isVerified", 
       })
       .sort({updatedAt: -1})
-    } catch (error) {
-      
+
+      const conversationWithMessages = await Promise.all(
+        conversations.map(async (conversation) => {
+          const messageCount = await Message.countDocuments({
+              conversationId: conversation._id
+          })
+          return messageCount > 0 ? conversation : null
+        })
+      )
+      const filteredConversations = conversationWithMessages.filter(
+        (conversation) => conversation !== null
+      )
+
+      res.status(200).json({filteredConversations})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+export const findConversationController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      const conversation = await Conversation.findOne({
+        members: {$all: [req.params.firstUserId, req.params.secondUserId]},
+      })
+      res.status(200).json({conversation})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  } 
+)
+
+// add message
+export const addMessageController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      const { conversationId, sender, text } = req.body;
+      let content = text
+      let attachment = null
+      const newMessage = new Message({
+        conversationId,
+        sender,
+        text: content,
+        attachment,
+      })
+      await Conversation.findById(
+        conversationId, 
+        { updatedAt: Date.now() },
+        { new: true }
+      )
+      const savedMessages = await newMessage.save()
+      res.status(200).json({savedMessages})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+// get message
+export const getMessagesController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      const messages = await Message.find({
+        conversationId: req.params.conversationId,
+      }).populate({
+        path: 'sender',
+        select: "userName name profileImg isVerified",
+      })
+      res.status(200).json({messages})
+    } catch (err) {
+      res.status(500).json(err);
     }
   }
 )

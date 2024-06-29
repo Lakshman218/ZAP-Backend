@@ -87,42 +87,88 @@ export const singlePostController = asyncHandler(
 )
 
 // get all posts
-export const getPostController = asyncHandler(
-  async(req:Request, res:Response) => {
-    const {userId} = req.body
+// export const getPostController = asyncHandler(
+//   async(req:Request, res:Response) => {
+//     const {userId} = req.body
     
-    const connections = await Connections.findOne({userId}, {following: 1}) 
-    const followingUsers = connections?.following
-    // const validUsers = {$or: [{ isPrivate: false }, { _id: { $in: followingUsers } }]}
-    const validUsers = {$or: [{ _id: { $in: followingUsers } }]}
-    const users = await User.find(validUsers)
-    const userIds = users.map((user) => user._id)
+//     const connections = await Connections.findOne({userId}, {following: 1}) 
+//     const followingUsers = connections?.following
+//     // const validUsers = {$or: [{ isPrivate: false }, { _id: { $in: followingUsers } }]}
+//     const validUsers = {$or: [{ _id: { $in: followingUsers } }]}
+//     const users = await User.find(validUsers)
+//     const userIds = users.map((user) => user._id)
 
-    interface PostsQuery {
-      userId: {$in: string[]};
-      isBlocked: boolean;
-      isDeleted: boolean;
-      or?: {[key: string]: any}[];
+//     interface PostsQuery {
+//       userId: {$in: string[]};
+//       isBlocked: boolean;
+//       isDeleted: boolean;
+//       or?: {[key: string]: any}[];
+//     }
+//     const postsQuery: PostsQuery = {
+//       userId: {$in: [...userIds, userId]},
+//       isBlocked: false,
+//       isDeleted: false,
+//     }
+//     const posts = await Post.find(postsQuery)
+//       .populate({
+//         path: "userId",
+//         select: "userName name profileImg isVerified",
+//       })
+//       .populate({
+//         path: "likes",
+//         select: "userName name profileImg isVerified",
+//       })
+//       .sort({date: -1})
+//       // console.log(posts);
+//       res.status(200).json(posts)
+//   }
+// )
+
+export const getPostController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      
+      // Fetch the user's connections
+      const connections = await Connections.findOne({ userId }, { following: 1 });
+      const followingUsers = connections?.following || [];
+      
+      // Fetch valid users who are not blocked or deleted
+      const validUsers = await User.find({
+        _id: { $in: followingUsers },
+        isBlocked: false,
+        isDeleted: false
+      });
+
+      const validUserIds = validUsers.map(user => user._id);
+      
+      // Prepare the posts query
+      const postsQuery = {
+        userId: { $in: [...validUserIds, userId] },
+        isBlocked: false,
+        isDeleted: false
+      };
+      
+      // Fetch the posts
+      const posts = await Post.find(postsQuery)
+        .populate({
+          path: "userId",
+          select: "userName name profileImg isVerified",
+          match: { isBlocked: false, isDeleted: false }
+        })
+        .populate({
+          path: "likes",
+          select: "userName name profileImg isVerified",
+          match: { isBlocked: false, isDeleted: false }
+        })
+        .sort({ date: -1 });
+        
+      res.status(200).json(posts);
+    } catch (err) {
+      res.status(500).json(err);
     }
-    const postsQuery: PostsQuery = {
-      userId: {$in: [...userIds, userId]},
-      isBlocked: false,
-      isDeleted: false,
-    }
-    const posts = await Post.find(postsQuery)
-      .populate({
-        path: "userId",
-        select: "userName name profileImg isVerified",
-      })
-      .populate({
-        path: "likes",
-        select: "userName name profileImg isVerified",
-      })
-      .sort({date: -1})
-      // console.log(posts);
-      res.status(200).json(posts)
   }
-)
+);
 
 // save posts
 
@@ -172,30 +218,65 @@ export const savePostController = asyncHandler(
 
 // get saved post
 
+// export const getSavedPostController = asyncHandler(
+//   async(req: Request, res: Response) => {
+//     const id = req.params.userId;
+//     const user = await User.findOne(
+//       {_id: id, isBlocked: false},
+//       { savedPost: 1, _id: 0 }
+//     )
+//     if(user) {
+//       const savedPost = user.savedPost
+//       const posts = await Post.find({
+//         _id: {$in: savedPost},
+//         isDeleted: false,
+//         isBlocked: false
+//       }).populate(  
+//         "userId"
+//       );
+//       // console.log("saved posts",posts);
+//       res.status(200).json(posts)
+//     } else {
+//       res.status(400);
+//       throw new Error("User not found")
+//     }
+//   }
+// )
+
 export const getSavedPostController = asyncHandler(
-  async(req: Request, res: Response) => {
+  async (req: Request, res: Response) => {
     const id = req.params.userId;
-    const user = await User.findOne(
-      {_id: id, isBlocked: false},
-      { savedPost: 1, _id: 0 }
-    )
-    if(user) {
-      const savedPost = user.savedPost
-      const posts = await Post.find({
-        _id: {$in: savedPost},
-        isDeleted: false,
-        isBlocked: false
-      }).populate(  
-        "userId"
+    try {
+      const user = await User.findOne(
+        { _id: id, isBlocked: false, isDeleted: false },
+        { savedPost: 1, _id: 0 }
       );
-      // console.log("saved posts",posts);
-      res.status(200).json(posts)
-    } else {
-      res.status(400);
-      throw new Error("User not found")
+
+      if (user) {
+        const savedPost = user.savedPost;
+        // Ensure posts are not deleted or blocked
+        const posts = await Post.find({
+          _id: { $in: savedPost },
+          isDeleted: false,
+          isBlocked: false
+        }).populate({
+          path: "userId",
+          select: "userName name profileImg isVerified",
+          match: { isBlocked: false, isDeleted: false }
+        });
+
+        const validPosts = posts.filter(post => post.userId !== null);
+
+        res.status(200).json(validPosts);
+      } else {
+        res.status(400);
+        throw new Error("User not found");
+      }
+    } catch (err) {
+      res.status(500).json(err);
     }
   }
-)
+);
 
 export const deletePostController = asyncHandler(
   async(req: Request, res: Response) => {
@@ -340,27 +421,59 @@ export const likePostController = asyncHandler(
 )
 
 // get post comments
+// export const getPostCommentsController = asyncHandler(
+//   async(req:Request, res:Response) => {
+//     const postId = req.params.postId
+//     // console.log("postId for getting comment",postId);
+//     const comments = await Comment.find({
+//       postId: postId,
+//       isDeleted: false 
+//     })
+//     .populate({
+//       path: "userId",
+//       select: "userName name profileImg",
+//     })
+//     .populate({
+//       path: "replyComments.userId",
+//       select: "userName name profileImg",
+//     })
+//     .sort({createdAt: -1})
+//     // console.log("get comments",comments);
+//     res.status(200).json({comments})
+//   }
+// )
+
 export const getPostCommentsController = asyncHandler(
-  async(req:Request, res:Response) => {
-    const postId = req.params.postId
-    // console.log("postId for getting comment",postId);
-    const comments = await Comment.find({
-      postId: postId,
-      isDeleted: false 
-    })
-    .populate({
-      path: "userId",
-      select: "userName name profileImg",
-    })
-    .populate({
-      path: "replyComments.userId",
-      select: "userName name profileImg",
-    })
-    .sort({createdAt: -1})
-    // console.log("get comments",comments);
-    res.status(200).json({comments})
+  async (req: Request, res: Response) => {
+    const postId = req.params.postId;
+    try {
+      const comments = await Comment.find({
+        postId: postId,
+        isDeleted: false
+      })
+      .populate({
+        path: "userId",
+        select: "userName name profileImg",
+        match: { isBlocked: false, isDeleted: false }
+      })
+      .populate({
+        path: "replyComments.userId",
+        select: "userName name profileImg",
+        match: { isBlocked: false, isDeleted: false }
+      })
+      .sort({ createdAt: -1 });
+
+      const validComments = comments.filter(comment => comment.userId !== null);
+      validComments.forEach(comment => {
+        comment.replyComments = comment.replyComments.filter(reply => reply.userId !== null);
+      });
+
+      res.status(200).json({ comments: validComments });
+    } catch (err) {
+      res.status(500).json(err);
+    }
   }
-)
+);
 
 // add comment
 export const addCommentController = asyncHandler(
@@ -574,3 +687,40 @@ export const handlePostLikeController = asyncHandler(
     res.status(200).json({message: `${likeState}`, posts})
   }
 )
+
+export const getExplorePostController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      // console.log("explore", userId);
+
+      // Find posts that are not blocked or deleted and not from the current user
+      const posts = await Post.find({
+        // userId: { $ne: userId },
+        isBlocked: false,
+        isDeleted: false, 
+      })
+      .populate({
+        path: "userId",
+        select: "userName name profileImg isVerified",
+        match: { isBlocked: false, isDeleted: false }
+      })
+      .populate({
+        path: "likes",
+        select: "userName name profileImg isVerified",
+        match: { isBlocked: false, isDeleted: false }
+      })
+      .sort({ date: -1 });
+
+      // Filter out posts where the associated user or any like is null
+      const validPosts = posts.filter(post => post.userId !== null);
+      validPosts.forEach(post => {
+        post.likes = post.likes.filter(like => like !== null);
+      });
+
+      res.status(200).json(validPosts);
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+);
