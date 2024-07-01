@@ -18,7 +18,7 @@ export const getEligibleUsersController = asyncHandler(
       const validUsers = {$or: [{ _id: { $in: followingUsers } }]}
       // $or: [{isPrivate: false}, {_id: {$in: followingUsers}}]
       const users = await User.find(validUsers)
-      // console.log("usr in msg", users);
+      // console.log("eligible users", users);
       res.status(200).json({users})
     } catch (err) {
       res.status(500).json(err);
@@ -29,7 +29,7 @@ export const getEligibleUsersController = asyncHandler(
 export const addConversationController = asyncHandler(
   async(req:Request, res:Response) => {
     const { senderId, receiverId } = req.body
-    console.log("msg ids",senderId, receiverId);  
+    // console.log("msg ids",senderId, receiverId);  
     const existConversation = await Conversation.findOne({
       members: { $all: [senderId, receiverId] },
     })
@@ -61,15 +61,16 @@ export const addConversationController = asyncHandler(
 export const getUserConversationController = asyncHandler(
   async(req:Request, res:Response) => {
     try {
+      const userId = req.params.userId
       const conversations = await Conversation.find({
-        members: {$in: [req.params.userId]},
+        members: {$in: [userId]},
       })
       .populate({
         path: "members",
         select: "userName name profileImg isVerified", 
       })
       .sort({updatedAt: -1})
-
+      
       const conversationWithMessages = await Promise.all(
         conversations.map(async (conversation) => {
           const messageCount = await Message.countDocuments({
@@ -81,7 +82,7 @@ export const getUserConversationController = asyncHandler(
       const filteredConversations = conversationWithMessages.filter(
         (conversation) => conversation !== null
       )
-
+      // console.log("conversations", filteredConversations);
       res.status(200).json({filteredConversations})
     } catch (err) {
       res.status(500).json(err);
@@ -107,6 +108,7 @@ export const addMessageController = asyncHandler(
   async(req:Request, res:Response) => {
     try {
       const { conversationId, sender, text } = req.body;
+      // console.log(req.body);
       let content = text
       let attachment = null
       const newMessage = new Message({
@@ -115,12 +117,13 @@ export const addMessageController = asyncHandler(
         text: content,
         attachment,
       })
-      await Conversation.findById(
+      await Conversation.findByIdAndUpdate(
         conversationId, 
         { updatedAt: Date.now() },
         { new: true }
       )
       const savedMessages = await newMessage.save()
+      // console.log("saved messages after adding", savedMessages);
       res.status(200).json({savedMessages})
     } catch (err) {
       res.status(500).json(err);
@@ -133,12 +136,40 @@ export const getMessagesController = asyncHandler(
   async(req:Request, res:Response) => {
     try {
       const messages = await Message.find({
-        conversationId: req.params.conversationId,
-      }).populate({
-        path: 'sender',
-        select: "userName name profileImg isVerified",
-      })
+        conversationId: req.params.conversationId,})
+      //   .populate({
+      //   path: 'sender',
+      //   select: "userName name profileImg isVerified",
+      // })
+      // console.log("get messages", messages);
       res.status(200).json({messages})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+// get last message
+export const getLastMessageController = asyncHandler(
+  async (req: Request, res: Response) => {
+    try {
+      const pipeline: any[] = [
+        {
+          $sort: { createdAt: -1 }, 
+        },
+        {
+          $group: {
+            _id: "$conversationId",
+            lastMessage: { $first: "$$ROOT" },
+          },
+        },
+        {
+          $replaceRoot: { newRoot: "$lastMessage" },
+        },
+      ];
+
+      const lastMessages = await Message.aggregate(pipeline);
+      res.status(200).json(lastMessages);
     } catch (err) {
       res.status(500).json(err);
     }

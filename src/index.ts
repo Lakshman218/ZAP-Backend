@@ -5,6 +5,7 @@ import sesssion, {
   SessionData,
 } from "express-session"
 import dotenv from "dotenv";
+import http from "http";
 import cors from "cors"
 import connectDB from './config/db';
 import userRoutes from './routes/userRoutes'

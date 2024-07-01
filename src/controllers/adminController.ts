@@ -151,20 +151,6 @@ export const getDashboardDetails  = asyncHandler(
   }
 )
 
-//  get all users
-export const getGraphUsersController = asyncHandler(
-  async(req:Request, res:Response) => {
-    try {
-      console.log("hereeeeeee");
-      const users = await User.find({isDeleted: false}).select('createdAt')
-      console.log("users for graph", users);
-      res.status(200).json({users})
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  }
-)
-
 export const chartDataController = asyncHandler(
   async(req:Request, res:Response) => {
     try {

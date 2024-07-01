@@ -26,6 +26,7 @@
     "express-session": "^1.18.0",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.13",
+    "socket.io": "^4.7.5",
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {

@@ -6,6 +6,7 @@ import {
   addMessageController,
   findConversationController,
   getEligibleUsersController,
+  getLastMessageController,
   getMessagesController,
   getUserConversationController,
 } from "../controllers/chatController";
@@ -14,6 +15,7 @@ import {
 router.post("/chat-eligible-users", getEligibleUsersController)
 router.post('/add-message', addMessageController)
 router.get('/get-messages/:conversationId', getMessagesController)
+router.get('/get-last-messages', getLastMessageController)
 
 // conversation routes
 router.post("/add-conversation", addConversationController)

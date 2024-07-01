@@ -3,8 +3,7 @@ const router = express.Router()
 
 import { LoginController, 
   chartDataController, 
-  getDashboardDetails, 
-  getGraphUsersController, 
+  getDashboardDetails,  
   getPostReports, 
   getPostsController, 
   getUsersController, 
@@ -20,7 +19,6 @@ router.get("/get-posts", getPostsController)
 router.post("/post-block", postBlockController)
 router.get("/get-reports", getPostReports)
 router.get("/get-details", getDashboardDetails)
-router.get("/get-all-users", getGraphUsersController)
 router.get("/chart-data", chartDataController)
 
 export default router
