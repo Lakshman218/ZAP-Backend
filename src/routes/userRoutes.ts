@@ -19,6 +19,7 @@ import {
   verifyEmailForEmailController,
   deleteAccountController,
   getAllUsersController,
+  switchAccountController,
   // verifyOTPForPswdController,
  } from '../controllers/userController'
  
@@ -43,6 +44,7 @@ router.post("/verifyOTP-forEmail", verifyOTPForEmailController)
 // router.post("/verifyOTP-forPswd", verifyOTPForPswdController)
 router.post("/delete-account", deleteAccountController)
 router.post("/get-users", getAllUsersController)
+router.patch("/switch-to-private", switchAccountController)
 
 
 export default router

@@ -4,6 +4,7 @@ import Connections from "../models/connections/connectionModel";
 import User from "../models/user/userModel";
 import Conversation from "../models/conversations/conversationModel";
 import Message from "../models/messages/MessagesModel";
+import { s3Upload } from "../utils/cloudStorage/S3Bucket";
 
 
 export const getEligibleUsersController = asyncHandler(
@@ -108,9 +109,33 @@ export const addMessageController = asyncHandler(
   async(req:Request, res:Response) => {
     try {
       const { conversationId, sender, text } = req.body;
-      // console.log(req.body);
+      console.log("req body daatta",req.body);
+      console.log("req file daatta",req.file);
       let content = text
       let attachment = null
+
+      if(req.file) {
+        let type: string;
+        if (req.file.mimetype.startsWith("image/")) {
+          type = "image";
+        } else if (req.file.mimetype.startsWith("video/")) {
+          type = "video";
+        } else if (req.file.mimetype.startsWith("audio/")) {
+          type = "audio";
+        } else {
+          type = "file";
+        }
+        const fileUrl = await s3Upload(req.file)
+        console.log("fileurl", fileUrl);
+        attachment = {
+          type: type,
+          url: fileUrl,
+          filename: fileUrl,
+          size: req.file.size,
+        };
+        content = req.body.messageType;
+      }
+
       const newMessage = new Message({
         conversationId,
         sender,
@@ -169,7 +194,40 @@ export const getLastMessageController = asyncHandler(
       ];
 
       const lastMessages = await Message.aggregate(pipeline);
-      res.status(200).json(lastMessages);
+      res.status(200).json({lastMessages});
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+// set message read
+export const setMessageReadController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try {
+      const { conversationId, userId } = req.body
+      const messages = await Message.updateMany(
+        { conversationId: conversationId, sender: { $ne: userId } },
+        { $set: { isRead: true }}
+      )
+      res.status(200).json({messages})
+    } catch (err) {
+      res.status(500).json(err);
+    }
+  }
+)
+
+// get unread messsages
+export const getUnReadMessageController = asyncHandler(
+  async(req:Request, res:Response) => {
+    try { 
+      const { conversationId, userId } = req.body
+      const messages = await Message.find({
+        conversationId: conversationId,
+        sender: { $ne: userId },
+        isRead: false,
+      })
+      res.status(200).json({messages})
     } catch (err) {
       res.status(500).json(err);
     }

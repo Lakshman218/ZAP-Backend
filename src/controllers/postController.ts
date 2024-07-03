@@ -693,8 +693,6 @@ export const getExplorePostController = asyncHandler(
     try {
       const { userId } = req.body;
       // console.log("explore", userId);
-
-      // Find posts that are not blocked or deleted and not from the current user
       const posts = await Post.find({
         // userId: { $ne: userId },
         isBlocked: false,
@@ -703,7 +701,7 @@ export const getExplorePostController = asyncHandler(
       .populate({
         path: "userId",
         select: "userName name profileImg isVerified",
-        match: { isBlocked: false, isDeleted: false }
+        match: { isBlocked: false, isDeleted: false, isPrivate:false }
       })
       .populate({
         path: "likes",

@@ -248,6 +248,7 @@ export const userLoginController = asyncHandler(
         email: user.email,
         phone: user.phone,
         gender: user.gender,
+        isPrivate: user.isPrivate,
         profileImg: user.profileImg,
         savedPost: user.savedPost,
         token: generateToken(user.id)
@@ -609,3 +610,34 @@ export const getAllUsersController = asyncHandler(
     }
   }
 );
+
+
+// switch account to private
+export const switchAccountController = asyncHandler(
+  async(req:Request, res:Response) => {
+    const {userId} = req.body
+    console.log("user id to switch", userId);
+    const user = await User.findById(userId)
+    if(!user) {
+      res.status(400).json({message: "User not found"})
+      return
+    }
+    user.isPrivate = !user.isPrivate
+    await user.save()
+    const userDetails = {
+      _id: user.id,
+        userName: user.userName,
+        name: user.name,
+        bio: user.bio,
+        email: user.email,
+        phone: user.phone,
+        gender: user.gender,
+        isPrivate: user.isPrivate,
+        profileImg: user.profileImg,
+        savedPost: user.savedPost,
+        token: generateToken(user.id)
+    }
+    const accountStatus = user.isPrivate ? "Private" : "Public"
+    res.status(200).json({userDetails, message: `Account has been changed to ${accountStatus}`})
+  }
+)

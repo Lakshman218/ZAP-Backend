@@ -7,14 +7,14 @@ export const getNotifications = asyncHandler(
   async(req: Request, res: Response):Promise<void> => {
     try {
       const userId = req.body.userId
-      console.log("userId", userId);
+      // console.log("userId", userId);
       const notifications = await Notification.find({receiverId: userId})
       .populate({
         path: 'senderId',
         select: 'userName name profileImg',
       })
       .sort({createdAt: -1})
-      console.log("notifications", notifications);
+      // console.log("notifications", notifications);
       res.status(200).json({ notifications: notifications })
     } catch (error) {
       console.error('Error fetching notifications:', error);
