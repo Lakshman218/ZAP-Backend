@@ -106,15 +106,16 @@ export const findConversationController = asyncHandler(
 
 // add message
 export const addMessageController = asyncHandler(
-  async(req:Request, res:Response) => {
+  async (req: Request, res: Response) => {
     try {
-      const { conversationId, sender, text } = req.body;
-      // console.log("req body daatta",req.body);
-      // console.log("req file daatta",req.file);
-      let content = text
-      let attachment = null
+      const { conversationId, sender, text, sharedPost } = req.body;
+      // console.log("all msg details", conversationId, sender, text, sharedPost);
+      // console.log("sharedPost", sharedPost);
+      let content = text;
+      let attachment = null;
+      let sharedPostData = null;
 
-      if(req.file) {
+      if (req.file) {
         let type: string;
         if (req.file.mimetype.startsWith("image/")) {
           type = "image";
@@ -125,8 +126,8 @@ export const addMessageController = asyncHandler(
         } else {
           type = "file";
         }
-        const fileUrl = await s3Upload(req.file)
-        console.log("fileurl", fileUrl);
+        const fileUrl = await s3Upload(req.file);
+        // console.log("fileurl", fileUrl);
         attachment = {
           type: type,
           url: fileUrl,
@@ -136,43 +137,61 @@ export const addMessageController = asyncHandler(
         content = req.body.messageType;
       }
 
+      if (sharedPost) {
+        sharedPostData = sharedPost; // Parse the sharedPost data
+      }
+      // console.log("sharedPostData", sharedPostData);
+
       const newMessage = new Message({
         conversationId,
         sender,
         text: content,
         attachment,
-      })
+        sharedPost: sharedPostData,
+      });
+      // console.log("newMessage", newMessage);
+
       await Conversation.findByIdAndUpdate(
-        conversationId, 
+        conversationId,
         { updatedAt: Date.now() },
         { new: true }
-      )
-      const savedMessages = await newMessage.save()
-      // console.log("saved messages after adding", savedMessages);
-      res.status(200).json(savedMessages)
+      );
+      console.log("conversation updated");
+
+      const savedMessages = await newMessage.save();
+      console.log("savedMessages", savedMessages);
+      res.status(200).json(savedMessages);
     } catch (err) {
       res.status(500).json(err);
     }
   }
-)
+);
 
 // get message
 export const getMessagesController = asyncHandler(
-  async(req:Request, res:Response) => {
+  async (req: Request, res: Response) => {
     try {
       const messages = await Message.find({
-        conversationId: req.params.conversationId,})
-      //   .populate({
-      //   path: 'sender',
-      //   select: "userName name profileImg isVerified",
-      // })
-      // console.log("get messages", messages);
-      res.status(200).json(messages)
+        conversationId: req.params.conversationId,
+      })
+      .populate({
+        path: 'sharedPost',
+        populate: {
+          path: 'userId',
+          select: 'userName name profileImg isVerified'
+        }
+      })
+      .populate({
+        path: 'sender',
+        select: "userName name profileImg isVerified",
+      });
+      
+      res.status(200).json(messages);
     } catch (err) {
       res.status(500).json(err);
     }
   }
-)
+);
 
 // get last message
 export const getLastMessageController = asyncHandler(

@@ -33,6 +33,10 @@ const MessageSchema = new Schema<MessageDocument>(
       type:Boolean,
       default:false
     },
+    sharedPost: {
+      type: Schema.Types.ObjectId,
+      ref: 'Post',
+    },
   },
   {timestamps: true}
 );

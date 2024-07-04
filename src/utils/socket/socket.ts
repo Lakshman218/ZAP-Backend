@@ -1,3 +1,7 @@
+require('dotenv').config();
+const bucketName = process.env.BUCKET_NAME as string;
+const region = process.env.BUCKET_REGION as string;
+
 const socketIo_Config = (io: any) => {
   let users: { userId: string; socketId: string }[] = [];
 
@@ -19,50 +23,50 @@ const socketIo_Config = (io: any) => {
 
     const getUser = (userId: string) => {
       console.log("id in getuser",userId);
+      console.log("users in getuser",users);
       return users.find((user) => user.userId === userId);
     };
 
     //when connect
     socket.on("addUser", (userId: string) => {
       addUser(userId, socket.id);
-      console.log(users);
+      console.log("in adduser",users);
       
       io.emit("getUsers", users);
     });
 
     // send and get message
-    socket.on(
-      "sendMessage",
-      ({
-        senderId,
-        receiverId,
-        text,
-        messageType,
-        file
-      }: {
-        senderId: string;
-        receiverId: string;
-        text: string;
-        messageType:string;
-        file:string;
-      }) => {
-        console.log("send msg detials",senderId,
-          receiverId,
-          text,
-          messageType,
-          file)
-
-        const user = getUser(receiverId);
-        console.log("user receiverid", user );
-        console.log("checking",user?.socketId);
-        io.to(user?.socketId).emit("getMessage", {
+    socket.on("sendMessage", ({
+      senderId,
+      receiverId,
+      text,
+      messageType,
+      file,
+      sharedPost, 
+    }: {
+      senderId: string;
+      receiverId: string;
+      text: string;
+      messageType: string;
+      file: string;
+      sharedPost: any; 
+    }) => {
+      console.log("Sending message:", { senderId, receiverId, text, messageType, file, sharedPost, });
+  
+      const receiver = getUser(receiverId);
+      console.log("receiverId",receiver);
+      if (receiver && receiver.socketId) {
+        io.to(receiver.socketId).emit("getMessage", {
           senderId,
           text,
           messageType,
-          file
+          file:`https://${bucketName}.s3.${region}.amazonaws.com/${file}`,
+          sharedPost, 
         });
+      } else {
+        console.log(`Receiver with userId ${receiverId} not found or offline`);
       }
-    );
+    });
 
 
     socket.on(
@@ -116,8 +120,10 @@ const socketIo_Config = (io: any) => {
         senderName:data.senderName,
         senderProfile:data.senderProfile
       };
-      console.log(emitdata)
-      const user = getUser(data.recieverId);
+      console.log("videoCallResponse",emitdata)
+      console.log("receiverid", data);
+      const user = getUser(data.receiverId);
+      console.log("receiverid", user);
       if(user){
         io.to(user.socketId).emit("videoCallResponse", emitdata);
       }

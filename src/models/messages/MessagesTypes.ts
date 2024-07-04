@@ -12,6 +12,7 @@ export interface MessageDocument {
   };
   isRead: boolean;
   isDeleted: boolean;
+  sharedPost?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
