@@ -417,7 +417,7 @@ export const userSuggestionsController = asyncHandler(
         _id: { $nin: [...followingUsers, userId] }
       }).limit(4);
 
-      res.status(200).json({ suggestedUsers });
+      res.status(200).json( suggestedUsers );
     } catch (err) {
       res.status(500).json(err);
     }

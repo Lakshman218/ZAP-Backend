@@ -20,7 +20,7 @@ export const getEligibleUsersController = asyncHandler(
       // $or: [{isPrivate: false}, {_id: {$in: followingUsers}}]
       const users = await User.find(validUsers)
       // console.log("eligible users", users);
-      res.status(200).json({users})
+      res.status(200).json(users)
     } catch (err) {
       res.status(500).json(err);
     }
@@ -39,7 +39,7 @@ export const addConversationController = asyncHandler(
       select: "userName name profileImg isVerified",
     })
     if(existConversation) {
-      res.status(200).json({existConversation})
+      res.status(200).json(existConversation)
       return
     }
     const newConversation = new Conversation({
@@ -84,7 +84,7 @@ export const getUserConversationController = asyncHandler(
         (conversation) => conversation !== null
       )
       // console.log("conversations", filteredConversations);
-      res.status(200).json({filteredConversations})
+      res.status(200).json(filteredConversations)
     } catch (err) {
       res.status(500).json(err);
     }
@@ -109,8 +109,8 @@ export const addMessageController = asyncHandler(
   async(req:Request, res:Response) => {
     try {
       const { conversationId, sender, text } = req.body;
-      console.log("req body daatta",req.body);
-      console.log("req file daatta",req.file);
+      // console.log("req body daatta",req.body);
+      // console.log("req file daatta",req.file);
       let content = text
       let attachment = null
 
@@ -149,7 +149,7 @@ export const addMessageController = asyncHandler(
       )
       const savedMessages = await newMessage.save()
       // console.log("saved messages after adding", savedMessages);
-      res.status(200).json({savedMessages})
+      res.status(200).json(savedMessages)
     } catch (err) {
       res.status(500).json(err);
     }
@@ -167,7 +167,7 @@ export const getMessagesController = asyncHandler(
       //   select: "userName name profileImg isVerified",
       // })
       // console.log("get messages", messages);
-      res.status(200).json({messages})
+      res.status(200).json(messages)
     } catch (err) {
       res.status(500).json(err);
     }
@@ -194,7 +194,7 @@ export const getLastMessageController = asyncHandler(
       ];
 
       const lastMessages = await Message.aggregate(pipeline);
-      res.status(200).json({lastMessages});
+      res.status(200).json(lastMessages);
     } catch (err) {
       res.status(500).json(err);
     }

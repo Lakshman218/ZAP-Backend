@@ -14,6 +14,8 @@ import postRoutes from './routes/postRoutes'
 import chatRoutes from './routes/chatRoutes'
 import connectionRoutes from './routes/connectionRoutes'
 import errorHandler from './middlewares/errorMiddleware';
+import { Server, Socket } from 'socket.io';
+import socketIo_Config from './utils/socket/socket';
 
 dotenv.config()
 
@@ -28,6 +30,15 @@ declare module "express-session" {
   }
 }
 
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  credentials: true,
+}))
+
+app.use(express.json());
+app.use(express.urlencoded({extended: true}));
+
 const sessionSecret = process.env.SESSION_SECRET || "default_secret_key";
 app.use(sesssion({
   secret: sessionSecret,
@@ -37,26 +48,25 @@ app.use(sesssion({
     maxAge: 24 * 60 * 60 * 1000,
   }
 }))
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  credentials: true,
-}))
 
-app.use(errorHandler)
-app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+connectDB()
+const PORT = process.env.PORT || 3000
+
+const server = http.createServer(app)
+const io: Server = new Server(server, {
+  cors: { origin: "*" },
+})
+
+socketIo_Config(io)
 
 app.use("/api/", userRoutes)
 app.use("/api/admin", adminRoutes)
 app.use("/api/post", postRoutes)
 app.use("/api/connection", connectionRoutes)
 app.use("/api/chat", chatRoutes)
+app.use(errorHandler)
 
-const PORT = process.env.PORT || 3000
-connectDB()
-
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   // console.log(`server starts running at http://localhost:${PORT}`);
   console.log(`server starts running at \x1b[36mhttp://localhost:${PORT}\x1b[0m`);
 })
