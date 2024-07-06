@@ -56,7 +56,7 @@ const userSchema: Schema = new Schema<user>({
   isGoogle: {
     type: Boolean,
     default: false
-  },
+  },  
   isPrivate: {
     type: Boolean,
     default: false,

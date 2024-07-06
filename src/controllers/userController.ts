@@ -405,19 +405,26 @@ export const userSuggestionsController = asyncHandler(
         isBlocked: false
       };
 
+      let suggestedUsers;
+
       if (!connection || (connection?.followers.length === 0 && connection?.following.length === 0)) {
-        let users = await User.find(userQuery).limit(4);
-        res.status(200).json({ suggestedUsers: users });
-        return;
+        suggestedUsers = await User.find(userQuery)
+          .select('profileImg userName name createdAt')
+          .sort({ createdAt: -1 }) // Ensure sorting is applied here as well
+          .limit(4);
+      } else {
+        const followingUsers = connection.following;
+        suggestedUsers = await User.find({
+          ...userQuery,
+          _id: { $nin: [...followingUsers, userId] }
+        })
+          .select('profileImg userName name createdAt')
+          .sort({ createdAt: -1 })
+          .limit(4);
       }
 
-      const followingUsers = connection.following;
-      const suggestedUsers = await User.find({
-        ...userQuery,
-        _id: { $nin: [...followingUsers, userId] }
-      }).limit(4);
-
-      res.status(200).json( suggestedUsers );
+      console.log("suggestedUsers", suggestedUsers);
+      res.status(200).json({ suggestedUsers });
     } catch (err) {
       res.status(500).json(err);
     }
@@ -589,7 +596,9 @@ export const deleteAccountController = asyncHandler(
 export const getAllUsersController = asyncHandler(
   async (req: Request, res: Response) => {
     try {
-      const users = await User.find({ isDeleted: false }).select('userName name profileImg isVerified');
+      const users = await User.find({ isDeleted: false })
+      .select('userName name profileImg isVerified')
+      .sort({ createdAt: -1 });
 
       const userIds = users.map(user => user._id);
       const connections = await Connections.find({ userId: { $in: userIds } });

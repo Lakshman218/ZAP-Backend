@@ -24,7 +24,7 @@ export const getConnectionController = asyncHandler(
 
 export const followUserController = asyncHandler(async (req: Request, res: Response) => {
   const { userId, followingUser } = req.body;
-  console.log("following ids",userId, followingUser);
+  // console.log("following ids",userId, followingUser);
   const followingUserInfo = await User.findById(followingUser);
   let followed = false;
   if (!followingUserInfo) {
