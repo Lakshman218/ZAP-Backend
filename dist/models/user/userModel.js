@@ -33,7 +33,7 @@ const userSchema = new mongoose_1.Schema({
     },
     name: {
         type: String,
-        default: '',
+        default: 'zap_user',
     },
     email: {
         type: String,
@@ -49,11 +49,12 @@ const userSchema = new mongoose_1.Schema({
     },
     profileImg: {
         type: String,
-        default: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTm0I8gC3EZZ894dIRJPjTYIcu-nRhxf_0C9A&s',
+        default: 'https://img.freepik.com/premium-vector/people-saving-money_24908-51569.jpg?w=740',
+        // default: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTm0I8gC3EZZ894dIRJPjTYIcu-nRhxf_0C9A&s',
     },
     bio: {
         type: String,
-        default: ''
+        default: 'Discovering moments, one post at a time.'
     },
     gender: {
         type: String,
@@ -67,6 +68,10 @@ const userSchema = new mongoose_1.Schema({
         type: Boolean,
         default: false
     },
+    isDeleted: {
+        type: Boolean,
+        default: false
+    },
     isOnline: {
         type: Boolean,
         default: false
@@ -74,7 +79,18 @@ const userSchema = new mongoose_1.Schema({
     isGoogle: {
         type: Boolean,
         default: false
-    }
+    },
+    isPrivate: {
+        type: Boolean,
+        default: false,
+    },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
+    premiumExpiryDate: {
+        type: Date
+    },
 }, { timestamps: true });
 const User = mongoose_1.default.model('User', userSchema);
 exports.default = User;

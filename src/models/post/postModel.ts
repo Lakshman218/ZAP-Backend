@@ -17,7 +17,7 @@ const PostSchema = new Schema<PostInterface>({
   },
   description: {
     type: String,
-    required: true,
+    
   },
   date: {
     type: Date,

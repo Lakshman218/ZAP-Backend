@@ -42,6 +42,10 @@ const ConnectionSchema = new mongoose_1.Schema({
         type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
         default: [],
     },
+    requestSend: {
+        type: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "User" }],
+        default: [],
+    }
 });
 const Connections = mongoose_1.default.model("Connections", ConnectionSchema);
 exports.default = Connections;

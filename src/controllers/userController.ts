@@ -423,7 +423,7 @@ export const userSuggestionsController = asyncHandler(
           .limit(4);
       }
 
-      console.log("suggestedUsers", suggestedUsers);
+      // console.log("suggestedUsers", suggestedUsers);
       res.status(200).json({ suggestedUsers });
     } catch (err) {
       res.status(500).json(err);
