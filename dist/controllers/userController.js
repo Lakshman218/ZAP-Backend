@@ -201,36 +201,42 @@ exports.resetPasswordController = (0, express_async_handler_1.default)((req, res
 }));
 // Login user
 exports.userLoginController = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
-    console.log("email: ", email, "Password: ", password);
-    const user = yield userModel_1.default.findOne({ email });
-    if (user === null || user === void 0 ? void 0 : user.isBlocked) {
-        res.status(400).json({ message: "user is blocked" });
-        return;
+    try {
+        const { email, password } = req.body;
+        console.log("email: ", email, "Password: ", password);
+        const user = yield userModel_1.default.findOne({ email });
+        if (user === null || user === void 0 ? void 0 : user.isBlocked) {
+            res.status(400).json({ message: "user is blocked" });
+            return;
+        }
+        if (user === null || user === void 0 ? void 0 : user.isDeleted) {
+            res.status(400).json({ message: "user not exist in this email" });
+            return;
+        }
+        if (user && typeof user.password === 'string' && (yield bcrypt_1.default.compare(password, user.password))) {
+            res.status(200).json({
+                message: "Login succussfull",
+                _id: user.id,
+                userName: user.userName,
+                name: user.name,
+                bio: user.bio,
+                email: user.email,
+                phone: user.phone,
+                gender: user.gender,
+                isPrivate: user.isPrivate,
+                profileImg: user.profileImg,
+                savedPost: user.savedPost,
+                token: (0, generateToken_1.default)(user.id)
+            });
+        }
+        else {
+            res.status(400).json({ message: "invalid credentails" });
+            // throw new Error("Invalid credentails");
+        }
     }
-    if (user === null || user === void 0 ? void 0 : user.isDeleted) {
-        res.status(400).json({ message: "user not exist in this email" });
-        return;
-    }
-    if (user && typeof user.password === 'string' && (yield bcrypt_1.default.compare(password, user.password))) {
-        res.status(200).json({
-            message: "Login succussfull",
-            _id: user.id,
-            userName: user.userName,
-            name: user.name,
-            bio: user.bio,
-            email: user.email,
-            phone: user.phone,
-            gender: user.gender,
-            isPrivate: user.isPrivate,
-            profileImg: user.profileImg,
-            savedPost: user.savedPost,
-            token: (0, generateToken_1.default)(user.id)
-        });
-    }
-    else {
-        res.status(400).json({ message: "invalid credentails" });
-        // throw new Error("Invalid credentails");
+    catch (error) {
+        res.status(400).json({ error });
+        console.log(error);
     }
 }));
 // Google authentication

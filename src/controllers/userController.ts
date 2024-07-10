@@ -225,7 +225,8 @@ export const resetPasswordController = asyncHandler(
 
 export const userLoginController = asyncHandler(
   async (req:Request, res:Response) => {
-    const {email, password} = req.body
+    try {
+      const {email, password} = req.body
     console.log("email: ",email, "Password: ", password);
 
     const user = await User.findOne({email})
@@ -256,6 +257,10 @@ export const userLoginController = asyncHandler(
     } else {
       res.status(400).json({message: "invalid credentails"})
       // throw new Error("Invalid credentails");
+    }
+    } catch (error) {
+      res.status(400).json({error})
+      console.log(error);
     }
   }
 )
