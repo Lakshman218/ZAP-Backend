@@ -126,8 +126,9 @@ export const addMessageController = asyncHandler(
         } else {
           type = "file";
         }
+        console.log("req.file", req.file);
         const fileUrl = await s3Upload(req.file);
-        // console.log("fileurl", fileUrl);
+        console.log("fileurl", fileUrl);
         attachment = {
           type: type,
           url: fileUrl,

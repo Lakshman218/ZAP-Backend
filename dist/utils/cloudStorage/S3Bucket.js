@@ -34,6 +34,7 @@ const s3Upload = (file) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         yield s3Client.send(new client_s3_1.PutObjectCommand(params));
         const url = `https://${bucketName}.s3.${region}.amazonaws.com/${file.originalname}`;
+        console.log("url :", url);
         return url;
     }
     catch (error) {

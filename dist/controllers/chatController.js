@@ -123,8 +123,9 @@ exports.addMessageController = (0, express_async_handler_1.default)((req, res) =
             else {
                 type = "file";
             }
+            console.log("req.file", req.file);
             const fileUrl = yield (0, S3Bucket_1.s3Upload)(req.file);
-            // console.log("fileurl", fileUrl);
+            console.log("fileurl", fileUrl);
             attachment = {
                 type: type,
                 url: fileUrl,
