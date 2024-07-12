@@ -318,7 +318,7 @@ export const getEditPostController = asyncHandler(
 
 export const updatePostController = asyncHandler(
   async(req: Request, res: Response) => {
-    const {postId, userId, title, description} = req.body
+    const {postId, userId, title} = req.body
     // console.log(postId, userId, title, description);
     const post = await Post.findById(postId)
     if (!post) {
@@ -326,7 +326,6 @@ export const updatePostController = asyncHandler(
       throw new Error("Post cannot be found");
     }
     if (title) post.title = title;
-    if (description) post.description = description;
     await post.save()
     const posts = await Post.find({
       userId: userId,

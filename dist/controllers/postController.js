@@ -280,7 +280,7 @@ exports.getEditPostController = (0, express_async_handler_1.default)((req, res) 
     res.status(200).json(post);
 }));
 exports.updatePostController = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { postId, userId, title, description } = req.body;
+    const { postId, userId, title } = req.body;
     // console.log(postId, userId, title, description);
     const post = yield postModel_1.default.findById(postId);
     if (!post) {
@@ -289,8 +289,6 @@ exports.updatePostController = (0, express_async_handler_1.default)((req, res) =
     }
     if (title)
         post.title = title;
-    if (description)
-        post.description = description;
     yield post.save();
     const posts = yield postModel_1.default.find({
         userId: userId,
